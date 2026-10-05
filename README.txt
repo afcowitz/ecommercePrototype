@@ -54,7 +54,8 @@ order returns its items to stock, as in the live system.
 
 Demo accounts:
   Administrator   admin@demo.mv   password: demo1234
-  Customer        any email address with a password of 6 or more characters
+  Customer        use Create account: name, phone number, any email address
+                  and a password of 6 or more characters
 
 Things the client should know:
 - Data is stored in the visitor's own browser only. Changes made in the admin
