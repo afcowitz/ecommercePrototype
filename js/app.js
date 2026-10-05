@@ -99,7 +99,9 @@ function validate(form,rules){
 const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), req=v=>v.length>0;
 const phoneOk=v=>v.replace(/\D/g,'').length>=7&&v.length<=30;
 async function handleSubmit(f){
-  if(f.id==='co'){
+  // NB: use getAttribute, not f.id. The product form has an input named "id", and browsers then return that input from f.id.
+  const fid=f.getAttribute('id');
+  if(fid==='co'){
     const mk=f.elements.mk&&f.elements.mk.checked;
     const isl=f.elements.area.value==='island';
     const rules={email:emailOk,first:req,last:req,phone:phoneOk};
@@ -122,7 +124,7 @@ async function handleSubmit(f){
     if(pendingConfirm)toast('Order placed. Check your email to confirm your new account.');
     location.hash='#/order/'+res.id;
   }
-  else if(f.id==='auth'){
+  else if(fid==='auth'){
     const reg=S.acctTab==='up',rules={email:emailOk,password:v=>v.length>=6};if(reg){rules.name=req;rules.phone=phoneOk}
     if(!validate(f,rules))return;
     const email=f.elements.email.value.trim(),password=f.elements.password.value;
@@ -135,7 +137,7 @@ async function handleSubmit(f){
       updateChrome();toast('Signed in');location.hash=isAdmin()?'#/admin':'#/account';render();
     }
   }
-  else if(f.id==='pf'){
+  else if(fid==='pf'){
     const fd=Object.fromEntries(new FormData(f));
     if(!validate(f,{name:req,category:req,price:v=>v!==''&&Number.isFinite(+v)&&+v>=0,stock:v=>v!==''&&Number.isInteger(+v)&&+v>=0}))return;
     const specs=fd.specs.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.indexOf(':');return i<0?[l,'']:[l.slice(0,i).trim(),l.slice(i+1).trim()]});
@@ -154,7 +156,7 @@ async function handleSubmit(f){
     S.products=await db.listProducts();
     closeAll();toast('Product saved');render(true);
   }
-  else if(f.id==='sf'){
+  else if(fid==='sf'){
     if(!validate(f,{free:v=>v!==''&&+v>=0,fee:v=>v!==''&&+v>=0,tax:v=>v!==''&&+v>=0&&+v<=1}))return;
     const v={free:+f.elements.free.value,fee:+f.elements.fee.value,tax:+f.elements.tax.value};
     await db.saveSettings({delivery_male_free_above:v.free,delivery_male_fee:v.fee,tax_rate:v.tax});
