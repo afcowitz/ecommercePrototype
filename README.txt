@@ -100,6 +100,30 @@ GOING LIVE WITH SUPABASE
    URL to the address where the store is hosted.
 
 
+UPDATING THE SITE AND SEEING THE CHANGES
+----------------------------------------
+
+Browsers keep copies of the site's files, and GitHub Pages tells them they may
+keep those copies for a short while (as far as I know, about ten minutes). So
+after an update you may still be shown the old version.
+
+To check an update quickly:
+- Wait until GitHub has finished publishing (the repository's Actions tab shows
+  "pages build and deployment" with a green tick; usually a minute or two).
+- Chrome: press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to reload without the
+  stored copies. Alternatively open a private window (Ctrl+Shift+N), which
+  always starts clean and also shows what a first-time visitor will see.
+- The footer shows the build number (for example "v0.4"). If it is the old
+  number, you are still looking at the old files.
+
+To preview changes before uploading: double-click index.html on your computer
+and it opens in your browser without GitHub. (Demo mode needs no server.)
+
+If you edit any file by hand, change the version number in index.html (every
+"?v=" and the footer text) so that browsers fetch the new files instead of the
+stored copies.
+
+
 DEPLOYING ON GITHUB PAGES
 -------------------------
 

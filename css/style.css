@@ -174,7 +174,6 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .hero .art{position:relative;padding:22px 30px 44px 0}
 .hero .glow{position:absolute;inset:4% 2% 4% -6%;background:radial-gradient(closest-side,hsl(var(--h,200) 90% 55%/.38),transparent 72%);filter:blur(14px);animation:glowPulse 4.5s ease-in-out infinite}
 .hero .art-in{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px hsl(var(--h,200) 80% 35%/.45),0 0 0 1px hsl(var(--h,200) 70% 60%/.25)}
-.hero .float{animation:floaty 6s ease-in-out infinite}
 .hero .float svg{border-radius:14px;transform:translate(calc(var(--px,0)*14px),calc(var(--py,0)*10px));transition:transform .25s ease-out}
 .hero[data-dir=next] .slide.active .art-in{animation:artInNext .85s cubic-bezier(.2,.8,.2,1) both}
 .hero[data-dir=prev] .slide.active .art-in{animation:artInPrev .85s cubic-bezier(.2,.8,.2,1) both}
@@ -202,7 +201,6 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 @keyframes riseIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 @keyframes slideOutNext{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-70px)}}
 @keyframes slideOutPrev{from{opacity:1;transform:none}to{opacity:0;transform:translateX(70px)}}
-@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes glowPulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
 @keyframes sweep{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
 @keyframes hprog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
