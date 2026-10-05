@@ -45,7 +45,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;backgroun
 .btn.block{width:100%}
 main{min-height:70vh;padding-bottom:60px}
 /* hero */
-.hero{position:relative;margin:26px 0 10px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:radial-gradient(900px 400px at 85% 0%,color-mix(in srgb,var(--accent2) 28%,transparent),transparent),var(--bg2);display:grid;grid-template-columns:1.1fr 1fr;gap:10px;align-items:center}
+.hero{position:relative;margin:26px 0 10px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:radial-gradient(900px 400px at 85% 0%,color-mix(in srgb,var(--accent2) 28%,transparent),transparent),var(--bg2)}
 .hero .copy{padding:48px 40px}
 .hero h1{font-size:clamp(2rem,4.6vw,3.4rem);line-height:1.05;margin:12px 0;letter-spacing:-.02em}
 .hero h1 em{font-style:normal;color:var(--accent);text-shadow:0 0 24px color-mix(in srgb,var(--accent) 50%,transparent)}
@@ -151,8 +151,9 @@ legend{font-weight:700;font-size:1.05rem;margin-bottom:12px;padding:0}
 footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:.85rem}
 footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 @media(max-width:820px){
-  .hero,.pgrid,.cols{grid-template-columns:1fr}
-  .hero .copy{padding:30px 22px 6px}.hero .art{padding:0 16px 16px}
+  .hero .slide,.pgrid,.cols{grid-template-columns:1fr}
+  .hero .copy{padding:30px 22px 6px}.hero .art{padding:0 16px 56px}
+  .hero .hbtn{display:none}
   .nav nav{display:none}.two{grid-template-columns:1fr}
 }
 
@@ -161,3 +162,57 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .demobar .link:hover{color:var(--accent)}
 .demohint{font-size:.82rem;color:var(--muted);border:1px dashed var(--warn);border-radius:8px;padding:10px 12px;margin-top:14px}
 .demohint b{color:var(--text)}
+
+/* ---------- hero slider ---------- */
+.hero .slides{display:grid}
+.hero .slide{grid-area:1/1;display:grid;grid-template-columns:1.1fr 1fr;gap:10px;align-items:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .6s ease}
+.hero .slide.active{opacity:1;visibility:visible;pointer-events:auto}
+.hero .slide.leaving{visibility:visible}
+.hero[data-dir=next] .slide.leaving{animation:slideOutNext .55s ease forwards}
+.hero[data-dir=prev] .slide.leaving{animation:slideOutPrev .55s ease forwards}
+.hero .copy{padding:48px 40px 62px}
+.hero .art{position:relative;padding:22px 30px 44px 0}
+.hero .glow{position:absolute;inset:4% 2% 4% -6%;background:radial-gradient(closest-side,hsl(var(--h,200) 90% 55%/.38),transparent 72%);filter:blur(14px);animation:glowPulse 4.5s ease-in-out infinite}
+.hero .art-in{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px hsl(var(--h,200) 80% 35%/.45),0 0 0 1px hsl(var(--h,200) 70% 60%/.25)}
+.hero .float{animation:floaty 6s ease-in-out infinite}
+.hero .float svg{border-radius:14px;transform:translate(calc(var(--px,0)*14px),calc(var(--py,0)*10px));transition:transform .25s ease-out}
+.hero[data-dir=next] .slide.active .art-in{animation:artInNext .85s cubic-bezier(.2,.8,.2,1) both}
+.hero[data-dir=prev] .slide.active .art-in{animation:artInPrev .85s cubic-bezier(.2,.8,.2,1) both}
+.hero .slide.active .art-in::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.2) 50%,transparent 70%);animation:sweep 1.2s .4s ease both}
+.hero .slide.active .copy>*{animation:riseIn .75s cubic-bezier(.2,.8,.2,1) both}
+.hero .slide.active .copy>*:nth-child(1){animation-delay:.12s}
+.hero .slide.active .copy>*:nth-child(2){animation-delay:.22s}
+.hero .slide.active .copy>*:nth-child(3){animation-delay:.32s}
+.hero .slide.active .copy>*:nth-child(4){animation-delay:.42s}
+.hero .slide.active .copy>*:nth-child(5){animation-delay:.52s}
+.hero .hbtn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(6px);cursor:pointer;font-size:1.4rem;line-height:1;z-index:3;opacity:0;transition:opacity .2s,border-color .2s}
+.hero:hover .hbtn,.hero:focus-within .hbtn{opacity:1}
+.hero .hbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hero .hbtn.prev{left:12px}.hero .hbtn.next{right:12px}
+.hero .hdots{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:8px;z-index:3}
+.hero .hdot{width:9px;height:9px;border-radius:99px;border:0;padding:0;background:var(--line);cursor:pointer;transition:width .35s,background .35s}
+.hero .hdot.on{width:30px;background:var(--accent)}
+.hero .hcount{position:absolute;top:16px;right:20px;z-index:3}
+.hero .hcount b{color:var(--accent);font-weight:600}
+.hero .hbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--line) 60%,transparent);z-index:3}
+.hero .hbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transform-origin:left;transform:scaleX(0)}
+.hero.paused .hbar i{animation-play-state:paused!important}
+@keyframes artInNext{from{opacity:0;transform:translateX(90px) scale(.92) rotate(2deg)}to{opacity:1;transform:none}}
+@keyframes artInPrev{from{opacity:0;transform:translateX(-90px) scale(.92) rotate(-2deg)}to{opacity:1;transform:none}}
+@keyframes riseIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes slideOutNext{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-70px)}}
+@keyframes slideOutPrev{from{opacity:1;transform:none}to{opacity:0;transform:translateX(70px)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes glowPulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes sweep{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
+@keyframes hprog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-width:820px){
+  .hero .slide{grid-template-columns:1fr}
+  .hero .copy{padding:30px 22px 6px}
+  .hero .art{padding:0 16px 52px}
+  .hero .hbtn{display:none}
+  .hero .hcount{top:10px;right:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero *,.hero *::after{animation:none!important;transition:none!important}
+}

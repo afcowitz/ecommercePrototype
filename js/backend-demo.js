@@ -14,9 +14,9 @@ const demoBackend=(()=>{
   const SEED=[
     P('NX-LT-001','Aether 14 Pro Laptop','Laptops',18999,6,'14-inch performance laptop for creators and developers. Placeholder product content.',[['Display','14" 2.8K OLED, 120 Hz'],['Processor','8-core, 4.8 GHz boost'],['Memory','32 GB LPDDR5'],['Storage','1 TB NVMe'],['Weight','1.4 kg']],true,190),
     P('NX-LT-002','Strata X Ultrabook 13','Laptops',14499,3,'Thin and light 13-inch ultrabook with all-day battery. Placeholder product content.',[['Display','13.3" FHD IPS'],['Memory','16 GB'],['Storage','512 GB NVMe'],['Battery','Up to 16 h']],false,215),
-    P('NX-PH-001','Pulse 12 Smartphone','Phones',8999,14,'Flagship-class smartphone with a dual-camera system. Placeholder product content.',[['Display','6.4" AMOLED, 120 Hz'],['Storage','256 GB'],['Camera','50 MP + 12 MP'],['Battery','5000 mAh']],false,270),
+    P('NX-PH-001','Pulse 12 Smartphone','Phones',8999,14,'Flagship-class smartphone with a dual-camera system. Placeholder product content.',[['Display','6.4" AMOLED, 120 Hz'],['Storage','256 GB'],['Camera','50 MP + 12 MP'],['Battery','5000 mAh']],true,270),
     P('NX-PH-002','Pulse 12 Lite','Phones',4999,22,'Value smartphone with a large battery. Placeholder product content.',[['Display','6.6" LCD, 90 Hz'],['Storage','128 GB'],['Battery','5000 mAh']],false,300),
-    P('NX-AU-001','Halo ANC Headphones','Audio',2799,18,'Over-ear wireless headphones with active noise cancellation. Placeholder product content.',[['Drivers','40 mm'],['Battery','Up to 40 h'],['Connectivity','Bluetooth 5.3']],false,160),
+    P('NX-AU-001','Halo ANC Headphones','Audio',2799,18,'Over-ear wireless headphones with active noise cancellation. Placeholder product content.',[['Drivers','40 mm'],['Battery','Up to 40 h'],['Connectivity','Bluetooth 5.3']],true,160),
     P('NX-AU-002','Orbit Buds Pro','Audio',1299,0,'True wireless earbuds with a compact charging case. Placeholder product content.',[['Battery','7 h + 21 h case'],['Rating','IPX4']],false,140),
     P('NX-CP-001','Core R7 Processor','Components',5499,9,'8-core desktop processor for gaming and productivity. Placeholder product content.',[['Cores / Threads','8 / 16'],['Boost clock','5.0 GHz'],['Socket','AM5']],false,20),
     P('NX-CP-002','Vector 16GB DDR5 Kit','Components',1899,25,'2 x 8 GB DDR5 memory kit. Placeholder product content.',[['Capacity','16 GB (2 x 8)'],['Speed','6000 MT/s'],['Latency','CL30']],false,40),
@@ -45,7 +45,6 @@ const demoBackend=(()=>{
       if(p.id){const i=all.findIndex(x=>x.id===p.id);if(i<0)throw new Error('Not permitted, or the record no longer exists');all[i]={...all[i],...row};set(KEY.p,all);return p.id}
       const id='d-'+Date.now().toString(36);all.push({id,...row});set(KEY.p,all);return id;
     },
-    async unfeatureOthers(id){needAdmin();set(KEY.p,products().map(x=>x.id===id?x:{...x,featured:false}))},
     async deleteProduct(id){needAdmin();const all=products();if(!all.some(x=>x.id===id))throw new Error('Not permitted, or the record no longer exists');set(KEY.p,all.filter(x=>x.id!==id))},
     async placeOrder(items,c,area,payment){
       const t=k=>String(c[k]==null?'':c[k]).trim();
@@ -96,14 +95,16 @@ const demoBackend=(()=>{
   const setMe=u=>set(KEY.me,u);
   const auth={
     async current(){return me()},
-    async signUp(email,password,fullName){
+    async signUp(email,password,fullName,phone){
       email=String(email).trim().toLowerCase();
       if(!emailRx.test(email))throw new Error('Enter a valid email address');
       if(String(password).length<6)throw new Error('Password must be at least 6 characters');
+      phone=String(phone||'').trim();
+      if(phone.replace(/\D/g,'').length<7||phone.length>30)throw new Error('Enter a valid phone number');
       if(email===DEMO_ADMIN.email)throw new Error('That address is reserved for the demo administrator');
       const users=get(KEY.u,[]);
       if(users.some(x=>x.email===email))throw new Error('An account with this email already exists in this demo. Please sign in.');
-      const user={id:'u'+Date.now().toString(36),email,name:fullName||email.split('@')[0],role:'customer',phone:'',address:'',island:'',atoll:''};
+      const user={id:'u'+Date.now().toString(36),email,name:fullName||email.split('@')[0],role:'customer',phone,address:'',island:'',atoll:''};
       users.push(user);set(KEY.u,users);setMe(user);   // passwords are never stored in the demo
       return{user,needsConfirmation:false};
     },
@@ -114,8 +115,8 @@ const demoBackend=(()=>{
         const a={id:'u-admin',email,name:'Demo Administrator',role:'admin',phone:'',address:'',island:'',atoll:''};setMe(a);return a;
       }
       if(String(password).length<6)throw new Error('Invalid login credentials');
-      const users=get(KEY.u,[]);let user=users.find(x=>x.email===email);
-      if(!user){user={id:'u'+Date.now().toString(36),email,name:email.split('@')[0],role:'customer',phone:'',address:'',island:'',atoll:''};users.push(user);set(KEY.u,users)}
+      const user=get(KEY.u,[]).find(x=>x.email===email);
+      if(!user)throw new Error('No demo account exists for this email. Please create an account first.');
       setMe(user);return user;
     },
     async signOut(){setMe(null)},

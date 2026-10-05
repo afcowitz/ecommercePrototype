@@ -7,7 +7,7 @@ async function viewAdmin(){
   if(tab==='products'){
     body=`<div class="row" style="margin-bottom:12px"><button class="btn" data-act="pform">Add product</button><span class="mono">${S.products.length} products</span></div>
     <div class="tw"><table><thead><tr><th>Product</th><th>Category</th><th>Price (${CFG.currency})</th><th>Stock</th><th></th></tr></thead><tbody>
-    ${S.products.map(p=>`<tr><td>${esc(p.name)}<div class="mono">${esc(p.sku||String(p.id).slice(0,8))}</div></td><td>${esc(p.category)}</td>
+    ${S.products.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'<span class="st ok">Hero</span>':''}<div class="mono">${esc(p.sku||String(p.id).slice(0,8))}</div></td><td>${esc(p.category)}</td>
     <td><input class="n" type="number" min="0" step="any" value="${p.price}" data-quick="price" data-id="${p.id}"></td>
     <td><input class="n" type="number" min="0" step="1" value="${p.stock}" data-quick="stock" data-id="${p.id}"></td>
     <td style="white-space:nowrap"><button class="btn ghost sm" data-act="pform" data-id="${p.id}">Edit</button> <button class="btn ${S.confirmDel===p.id?'danger':'ghost'} sm" data-act="del" data-id="${p.id}">${S.confirmDel===p.id?'Confirm delete':'Delete'}</button></td></tr>`).join('')}</tbody></table></div>`;
@@ -38,7 +38,7 @@ function productForm(id){
   <div class="two">${fld('price','Price ('+CFG.currency+')',p.price,{type:'number',err:'Enter a non-negative number'})}${fld('stock','Stock',p.stock,{type:'number',err:'Enter a whole number ≥ 0'})}</div>
   <div class="field"><label>Description</label><textarea name="description" rows="3">${esc(p.description)}</textarea></div>
   <div class="field"><label>Specifications (one per line, “Label: value”)</label><textarea name="specs" rows="4">${esc((p.specs||[]).map(s=>s[0]+': '+s[1]).join('\n'))}</textarea></div>
-  <div class="two"><div class="field"><label>Placeholder art hue (0–360)</label><input name="hue" type="number" min="0" max="360" value="${hue}"></div><label class="chk" style="align-self:end;margin-bottom:18px"><input type="checkbox" name="featured" ${p.featured?'checked':''}> Feature in hero banner</label></div>
+  <div class="two"><div class="field"><label>Placeholder art hue (0–360)</label><input name="hue" type="number" min="0" max="360" value="${hue}"></div><label class="chk" style="align-self:end;margin-bottom:18px"><input type="checkbox" name="featured" ${p.featured?'checked':''}> Show in hero banner (several allowed)</label></div>
   <div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" data-act="closeall">Cancel</button><button class="btn" type="submit">Save</button></div>
   <input type="hidden" name="id" value="${esc(id||'')}"></form></div>`;
   $('#modal').classList.add('open');

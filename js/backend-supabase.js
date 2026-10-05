@@ -24,7 +24,6 @@ const supabaseBackend=(()=>{
       if(p.id){changed(must(await sb.from('products').update(row).eq('id',p.id).select('id')));return p.id}
       return must(await sb.from('products').insert(row).select('id').single()).id;
     },
-    async unfeatureOthers(id){must(await sb.from('products').update({featured:false}).eq('featured',true).neq('id',id))},
     async deleteProduct(id){changed(must(await sb.from('products').delete().eq('id',id).select('id')))},
     async placeOrder(items,customer,area,payment){
       const r=must(await sb.rpc('place_order',{p_items:items,p_customer:customer,p_area:area,p_payment:payment}));
@@ -41,8 +40,8 @@ const supabaseBackend=(()=>{
   };
   const auth={
     async current(){const {data:{session}}=await sb.auth.getSession();return session?userFrom(session):null},
-    async signUp(email,password,fullName){
-      const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:fullName}}});
+    async signUp(email,password,fullName,phone){
+      const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:fullName,phone:phone||''}}});
       if(error)throw error;
       return data.session?{user:await userFrom(data.session),needsConfirmation:false}:{user:null,needsConfirmation:true};
     },

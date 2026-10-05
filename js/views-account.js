@@ -1,6 +1,6 @@
 "use strict";
 function demoHint(){
-  return CFG.mode!=='demo'?'':`<div class="demohint"><b>Demo accounts.</b> Administrator: <b>admin@demo.mv</b> / <b>demo1234</b>. Customer: any email address with a password of at least 6 characters. Passwords are not stored or checked in the demo, so please do not enter a real one.</div>`;
+  return CFG.mode!=='demo'?'':`<div class="demohint"><b>Demo accounts.</b> Administrator: <b>admin@demo.mv</b> / <b>demo1234</b>. Customer: choose Create account and enter a name, a phone number, any email address and a password of at least 6 characters. Passwords are not stored or checked in the demo, so please do not enter a real one.</div>`;
 }
 /* NODEX — account view (sign in, registration, order history). */
 async function viewAccount(){
@@ -12,6 +12,6 @@ async function viewAccount(){
   }
   const reg=S.acctTab==='up';
   return `<h2 class="sec">Account</h2><div class="panel" style="max-width:460px"><div class="tabs"><button class="${reg?'':'on'}" data-act="atab" data-v="in">Sign in</button><button class="${reg?'on':''}" data-act="atab" data-v="up">Create account</button></div>
-  <form id="auth" novalidate>${reg?fld('name','Full name','',{ac:'name'}):''}${fld('email','Email','',{type:'email',ac:'email',err:'Enter a valid email address'})}${fld('password','Password','',{type:'password',ac:reg?'new-password':'current-password',err:'Minimum 6 characters'})}
+  <form id="auth" novalidate>${reg?fld('name','Full name','',{ac:'name'})+fld('phone','Phone number (required)','',{type:'tel',ac:'tel',ph:'e.g. 7771234',err:'Enter a valid phone number (at least 7 digits)'}):''}${fld('email','Email','',{type:'email',ac:'email',err:'Enter a valid email address'})}${fld('password','Password','',{type:'password',ac:reg?'new-password':'current-password',err:'Minimum 6 characters'})}
   <button class="btn block" type="submit">${reg?'Create account':'Sign in'}</button></form>${demoHint()}</div>`;
 }

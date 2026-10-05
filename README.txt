@@ -26,6 +26,7 @@ js/backend-demo.js      Demo backend: the same functions, simulated in the
                         browser (localStorage).
 js/backend.js           Chooses the backend according to the mode.
 js/state.js             Application state, cart and totals.
+js/hero.js              Hero banner slider: autoplay, arrows, dots, swipe.
 js/views-store.js       Home, catalogue, product page, cart, checkout and
                         order confirmation.
 js/views-account.js     Sign in, registration and order history.
@@ -51,6 +52,13 @@ delivery fee rule), customer registration and sign-in, order history, and the
 admin portal (add, edit and delete products, change price and stock, view
 orders, change order status, change delivery and tax settings). Cancelling an
 order returns its items to stock, as in the live system.
+
+The home page opens with a rotating hero banner. It shows every in-stock
+product ticked "Show in hero banner" in the admin product form (up to the
+heroMax setting in js/config.js), changing every heroInterval milliseconds.
+Visitors can use the arrows, dots, keyboard arrows, or swipe on a phone.
+The banner pauses on hover and does not auto-advance for visitors who have
+asked their device to reduce motion.
 
 Demo accounts:
   Administrator   admin@demo.mv   password: demo1234

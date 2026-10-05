@@ -36,8 +36,9 @@ create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   -- The role is never read from user-supplied metadata.
-  insert into public.profiles (id, full_name)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'full_name', ''))
+  insert into public.profiles (id, full_name, phone)
+  values (new.id, left(coalesce(new.raw_user_meta_data ->> 'full_name', ''), 200),
+          left(coalesce(new.raw_user_meta_data ->> 'phone', ''), 30))
   on conflict (id) do nothing;
   return new;
 end $$;
@@ -217,7 +218,7 @@ begin
     'id', v_order.id, 'order_no', v_order.order_no, 'status', v_order.status, 'area', v_order.area,
     'payment', v_order.payment_method, 'subtotal', v_order.subtotal, 'delivery_fee', v_order.delivery_fee,
     'tax', v_order.tax, 'total', v_order.total, 'items', v_lines,
-    'customer', jsonb_build_object('email', v_email, 'first', v_first, 'last', v_last));
+    'customer', jsonb_build_object('email', v_email, 'first', v_first, 'last', v_last, 'phone', v_phone));
 end $$;
 
 revoke all on function public.place_order(jsonb, jsonb, text, text) from public;
@@ -269,9 +270,9 @@ grant insert, update, delete on public.products to authenticated;               
 insert into public.products (sku, name, category, price, stock, description, specs, featured, hue) values
  ('NX-LT-001','Aether 14 Pro Laptop','Laptops',18999,6,'14-inch performance laptop for creators and developers. Placeholder product content.','[["Display","14\" 2.8K OLED, 120 Hz"],["Processor","8-core, 4.8 GHz boost"],["Memory","32 GB LPDDR5"],["Storage","1 TB NVMe"],["Weight","1.4 kg"]]',true,190),
  ('NX-LT-002','Strata X Ultrabook 13','Laptops',14499,3,'Thin and light 13-inch ultrabook with all-day battery. Placeholder product content.','[["Display","13.3\" FHD IPS"],["Memory","16 GB"],["Storage","512 GB NVMe"],["Battery","Up to 16 h"]]',false,215),
- ('NX-PH-001','Pulse 12 Smartphone','Phones',8999,14,'Flagship-class smartphone with a dual-camera system. Placeholder product content.','[["Display","6.4\" AMOLED, 120 Hz"],["Storage","256 GB"],["Camera","50 MP + 12 MP"],["Battery","5000 mAh"]]',false,270),
+ ('NX-PH-001','Pulse 12 Smartphone','Phones',8999,14,'Flagship-class smartphone with a dual-camera system. Placeholder product content.','[["Display","6.4\" AMOLED, 120 Hz"],["Storage","256 GB"],["Camera","50 MP + 12 MP"],["Battery","5000 mAh"]]',true,270),
  ('NX-PH-002','Pulse 12 Lite','Phones',4999,22,'Value smartphone with a large battery. Placeholder product content.','[["Display","6.6\" LCD, 90 Hz"],["Storage","128 GB"],["Battery","5000 mAh"]]',false,300),
- ('NX-AU-001','Halo ANC Headphones','Audio',2799,18,'Over-ear wireless headphones with active noise cancellation. Placeholder product content.','[["Drivers","40 mm"],["Battery","Up to 40 h"],["Connectivity","Bluetooth 5.3"]]',false,160),
+ ('NX-AU-001','Halo ANC Headphones','Audio',2799,18,'Over-ear wireless headphones with active noise cancellation. Placeholder product content.','[["Drivers","40 mm"],["Battery","Up to 40 h"],["Connectivity","Bluetooth 5.3"]]',true,160),
  ('NX-AU-002','Orbit Buds Pro','Audio',1299,0,'True wireless earbuds with a compact charging case. Placeholder product content.','[["Battery","7 h + 21 h case"],["Rating","IPX4"]]',false,140),
  ('NX-CP-001','Core R7 Processor','Components',5499,9,'8-core desktop processor for gaming and productivity. Placeholder product content.','[["Cores / Threads","8 / 16"],["Boost clock","5.0 GHz"],["Socket","AM5"]]',false,20),
  ('NX-CP-002','Vector 16GB DDR5 Kit','Components',1899,25,'2 x 8 GB DDR5 memory kit. Placeholder product content.','[["Capacity","16 GB (2 x 8)"],["Speed","6000 MT/s"],["Latency","CL30"]]',false,40),

@@ -31,6 +31,7 @@ async function render0(keepScroll){
   const y=window.scrollY;
   $('#app').innerHTML=html;
   const sel=$('select[data-in=sort]');if(sel)sel.value=S.filter.sort;
+  initHero();
   updateChrome();
   if(!keepScroll)window.scrollTo(0,0);else window.scrollTo(0,y);
 }
@@ -91,11 +92,12 @@ function validate(form,rules){
   return ok;
 }
 const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), req=v=>v.length>0;
+const phoneOk=v=>v.replace(/\D/g,'').length>=7&&v.length<=30;
 async function handleSubmit(f){
   if(f.id==='co'){
     const mk=f.elements.mk&&f.elements.mk.checked;
     const isl=f.elements.area.value==='island';
-    const rules={email:emailOk,first:req,last:req,phone:v=>v.replace(/\D/g,'').length>=7};
+    const rules={email:emailOk,first:req,last:req,phone:phoneOk};
     if(isl){rules.island=req;rules.atoll=req}else rules.address=req;
     if(mk)rules.password=v=>v.length>=6;
     if(!validate(f,rules)){const bad=f.querySelector('.err');if(bad)bad.scrollIntoView({block:'center'});return}
@@ -103,11 +105,12 @@ async function handleSubmit(f){
     const customer={email:fd.email.trim(),first:fd.first.trim(),last:fd.last.trim(),phone:fd.phone.trim(),address:(fd.address||'').trim(),island:(fd.island||'').trim(),atoll:(fd.atoll||'').trim()};
     let pendingConfirm=false;
     if(mk&&!S.user){
-      const r=await auth.signUp(customer.email,fd.password,customer.first+' '+customer.last);
+      const r=await auth.signUp(customer.email,fd.password,customer.first+' '+customer.last,customer.phone);
       if(r.user){S.user=r.user;updateChrome();await auth.updateProfile({phone:customer.phone,address:customer.address,island:customer.island,atoll:customer.atoll})}
       else pendingConfirm=r.needsConfirmation;
     }
     const res=await db.placeOrder(cartLines().map(l=>({id:l.p.id,qty:l.qty})),customer,fd.area,fd.pay);
+    res.customer={...customer,...res.customer};
     S.lastOrder=res;try{sessionStorage.setItem('nx_last',JSON.stringify(res))}catch(e){}
     S.cart=[];saveCart();renderDrawer();
     try{S.products=await db.listProducts()}catch(e){}
@@ -115,11 +118,11 @@ async function handleSubmit(f){
     location.hash='#/order/'+res.id;
   }
   else if(f.id==='auth'){
-    const reg=S.acctTab==='up',rules={email:emailOk,password:v=>v.length>=6};if(reg)rules.name=req;
+    const reg=S.acctTab==='up',rules={email:emailOk,password:v=>v.length>=6};if(reg){rules.name=req;rules.phone=phoneOk}
     if(!validate(f,rules))return;
     const email=f.elements.email.value.trim(),password=f.elements.password.value;
     if(reg){
-      const r=await auth.signUp(email,password,f.elements.name.value.trim());
+      const r=await auth.signUp(email,password,f.elements.name.value.trim(),f.elements.phone.value.trim());
       if(r.user){S.user=r.user;updateChrome();toast('Account created');location.hash='#/account';render()}
       else toast('Check your email to confirm your account, then sign in.');
     }else{
@@ -133,7 +136,6 @@ async function handleSubmit(f){
     const specs=fd.specs.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.indexOf(':');return i<0?[l,'']:[l.slice(0,i).trim(),l.slice(i+1).trim()]});
     const hue=Math.min(360,Math.max(0,Math.round(Number(fd.hue))));
     const id=await db.saveProduct({id:fd.id||null,sku:(fd.sku||'').trim(),name:fd.name.trim(),category:fd.category.trim(),price:Number(fd.price),stock:Number(fd.stock),description:fd.description.trim(),specs,featured:!!fd.featured,hue:Number.isFinite(hue)?hue:200});
-    if(fd.featured)await db.unfeatureOthers(id);
     S.products=await db.listProducts();
     closeAll();toast('Product saved');render(true);
   }

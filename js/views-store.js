@@ -24,12 +24,22 @@ function catalogue(){
 const pillsHtml=()=>cats().map(c=>`<button class="pill ${S.filter.cat===c?'on':''}" data-act="cat" data-v="${esc(c)}">${esc(c)}</button>`).join('');
 function refreshGrid(){const g=$('#grid');if(!g)return;g.innerHTML=gridHtml();$('#count').textContent=filtered().length+' items';$('#pills').innerHTML=pillsHtml()}
 
-function viewHome(){
-  const h=S.products.find(p=>p.featured&&p.stock>0)||S.products.find(p=>p.stock>0);
-  const hero=h?`<section class="hero"><div class="copy"><span class="mono">// Featured product</span><h1>${esc(h.name).replace(/^(\S+)/,'<em>$1</em>')}</h1>
+function heroSlide(h,i,n){
+  const hue=Number.isFinite(+h.hue)?+h.hue:200;
+  return `<article class="slide ${i===0?'active':''}" role="group" aria-roledescription="slide" aria-label="${i+1} of ${n}"><div class="copy"><span class="mono">// Featured product</span><h1>${esc(h.name).replace(/^(\S+)/,'<em>$1</em>')}</h1>
    <p>${esc(h.description)}</p><div class="chips">${(h.specs||[]).slice(0,3).map(s=>`<span class="chip">${esc(s[1])}</span>`).join('')}</div>
    <div class="row"><span class="price">${fmt(h.price)}</span><button class="btn" data-act="add" data-id="${h.id}">Add to cart</button><a class="btn ghost" href="#/product/${h.id}">View details</a></div></div>
-   <div class="art">${art(h)}</div></section>`:'';
+   <div class="art" style="--h:${hue}"><div class="glow"></div><div class="art-in"><div class="float">${art(h)}</div></div></div></article>`;
+}
+function viewHome(){
+  let hs=S.products.filter(p=>p.featured&&p.stock>0).slice(0,CFG.heroMax||5);
+  if(!hs.length){const f=S.products.find(p=>p.stock>0);if(f)hs=[f]}
+  const n=hs.length,pad=v=>String(v).padStart(2,'0');
+  const ui=n>1?`<button class="hbtn prev" data-hero="prev" aria-label="Previous product">‹</button><button class="hbtn next" data-hero="next" aria-label="Next product">›</button>
+   <div class="hcount mono"><b id="hc">01</b> / ${pad(n)}</div>
+   <div class="hdots">${hs.map((_,i)=>`<button class="hdot ${i===0?'on':''}" data-hero="${i}" aria-label="Show product ${i+1}"></button>`).join('')}</div>
+   <div class="hbar"><i id="hbar"></i></div>`:'';
+  const hero=n?`<section class="hero" id="hero" data-dir="next" role="region" aria-roledescription="carousel" aria-label="Featured products"><div class="slides">${hs.map((h,i)=>heroSlide(h,i,n)).join('')}</div>${ui}</section>`:'';
   const tiles=`<div class="tiles">${cats().slice(1).map(c=>`<button class="tile" data-act="cat" data-v="${esc(c)}" data-go="1"><span class="mono">Category</span><b>${esc(c)}</b><span class="mono">${S.products.filter(p=>p.category===c).length} items</span></button>`).join('')}</div>`;
   return hero+tiles+catalogue();
 }
@@ -68,7 +78,7 @@ function viewCart(){
   <div class="panel"><h3 style="margin-top:0">Order summary</h3>${sumHtml()}<p class="mono">Delivery is calculated at checkout.</p><a class="btn block" href="#/checkout">Checkout</a></div></div>`;
 }
 
-function fld(name,label,val='',opts={}){return `<div class="field" data-f="${name}"><label>${label}</label><input name="${name}" type="${opts.type||'text'}" value="${esc(val)}" autocomplete="${opts.ac||'on'}"><div class="em">${opts.err||'Required'}</div></div>`}
+function fld(name,label,val='',opts={}){return `<div class="field" data-f="${name}"><label>${label}</label><input name="${name}" type="${opts.type||'text'}" value="${esc(val)}" autocomplete="${opts.ac||'on'}" placeholder="${esc(opts.ph||'')}"><div class="em">${opts.err||'Required'}</div></div>`}
 function viewCheckout(){
   const L=cartLines();
   if(!L.length)return '<h2 class="sec">Checkout</h2><div class="empty">Your cart is empty. <a href="#/shop" style="color:var(--accent)">Browse the catalogue</a></div>';
@@ -82,7 +92,7 @@ function viewCheckout(){
   <div class="two">${fld('first','First name',nm[0]||'',{ac:'given-name'})}${fld('last','Last name',nm.slice(1).join(' '),{ac:'family-name'})}</div>
   ${fld('address','Address / house name',u.address||'',{ac:'street-address'})}
   <div id="islandf" class="two" style="display:${S.area==='island'?'grid':'none'}">${fld('island','Island',u.island||'')}${fld('atoll','Atoll',u.atoll||'')}</div>
-  ${fld('phone','Phone',u.phone||'',{type:'tel',ac:'tel',err:'Enter a phone number'})}</fieldset>
+  ${fld('phone','Phone number (required)',u.phone||'',{type:'tel',ac:'tel',ph:'e.g. 7771234',err:'Enter a valid phone number (at least 7 digits)'})}</fieldset>
   <fieldset><legend>Delivery information</legend><div class="note" style="margin:0">Delivery in Male' free for items price exceeding ${CFG.delivery.maleFreeAbove} MVR. If less than ${CFG.delivery.maleFreeAbove}MVR, a delivery fee of MVR ${CFG.delivery.maleFee} will be charged. Delivery to islands will be arranged through contact with the customer and the store will deliver the item to the requested island boat. Applicable fees will be charged.</div></fieldset>
   <fieldset><legend>Payment</legend>
   <div class="opt"><label><input type="radio" name="pay" value="cod" checked>Cash on delivery / pickup</label></div>
@@ -101,7 +111,8 @@ async function viewOrder(id){
   if(!o&&S.user){o=(await db.listOrders()).find(x=>x.id===id)||null}
   if(!o)return '<div class="empty" style="margin-top:30px">Order not found. Guest confirmations are only shown on the device that placed the order; signed-in customers can find their orders under Account.</div>';
   return `<h2 class="sec">Order received <span class="mono">${esc(o.id)}</span></h2><div class="panel" style="max-width:640px">
-  <p>Thank you, ${esc(o.customer.first)}. We will contact you at <b>${esc(o.customer.email)}</b> to confirm your order.</p>
+  <p>Thank you, ${esc(o.customer.first)}. We will contact you on the phone number or email you provided to confirm your order.</p>
+  <p class="mono">Phone: ${esc(o.customer.phone||'—')} · Email: ${esc(o.customer.email||'—')}</p>
   ${o.items.map(i=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;padding:5px 0"><span>${esc(i.name)} <span class="mono">× ${i.qty}</span></span><span class="price">${fmt(i.price*i.qty)}</span></div>`).join('')}
   <div class="sum" style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><div><span>Delivery</span><span>${o.area==='island'?'To be arranged':(o.shipping?fmt(o.shipping):'Free')}</span></div><div class="tot"><span>Total</span><span>${fmt(o.total)}</span></div></div>
   <p class="mono">Status: ${esc(o.status)} · Payment: ${esc(PAY[o.payment]||o.payment)}</p><a class="btn" href="#/shop">Continue shopping</a></div>`;
