@@ -7,7 +7,7 @@ async function viewAdmin(){
   if(tab==='products'){
     body=`<div class="row" style="margin-bottom:12px"><button class="btn" data-act="pform">Add product</button><span class="mono">${S.products.length} products</span></div>
     <div class="tw"><table><thead><tr><th>Product</th><th>Category</th><th>Price (${CFG.currency})</th><th>Stock</th><th></th></tr></thead><tbody>
-    ${S.products.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'<span class="st ok">Hero</span>':''}<div class="mono">${esc(p.sku||String(p.id).slice(0,8))}</div></td><td>${esc(p.category)}</td>
+    ${S.products.map(p=>`<tr><td><div class="pname"><div class="athumb">${pic(p)}</div><div>${esc(p.name)} ${p.featured?'<span class="st ok">Hero</span>':''}<div class="mono">${esc(p.sku||String(p.id).slice(0,8))}</div></div></div></td><td>${esc(p.category)}</td>
     <td><input class="n" type="number" min="0" step="any" value="${p.price}" data-quick="price" data-id="${p.id}"></td>
     <td><input class="n" type="number" min="0" step="1" value="${p.stock}" data-quick="stock" data-id="${p.id}"></td>
     <td style="white-space:nowrap"><button class="btn ghost sm" data-act="pform" data-id="${p.id}">Edit</button> <button class="btn ${S.confirmDel===p.id?'danger':'ghost'} sm" data-act="del" data-id="${p.id}">${S.confirmDel===p.id?'Confirm delete':'Delete'}</button></td></tr>`).join('')}</tbody></table></div>`;
@@ -30,16 +30,41 @@ async function viewAdmin(){
   return `<h2 class="sec">Admin <span class="mono">Store management</span></h2><div class="tabs">${T('products','Products')}${T('orders','Orders')}${T('settings','Settings')}</div>${body}`;
 }
 function productForm(id){
-  const p=id?getP(id):{name:'',sku:'',category:'',price:'',stock:0,description:'',specs:[],featured:false,hue:200};
+  const p=id?getP(id):{name:'',sku:'',category:'',price:'',stock:0,description:'',specs:[],featured:false,hue:200,images:[]};
+  PF={items:(p.images||[]).map(url=>({url})),orig:[...(p.images||[])]};
   const hue=p.hue??200;
   $('#modal').innerHTML=`<div class="box"><h3 style="margin-top:0">${id?'Edit product':'Add product'}</h3><form id="pf" novalidate>
   ${fld('name','Name',p.name)}
   <div class="two">${fld('sku','SKU (optional, unique)',p.sku||'')}<div class="field" data-f="category"><label>Category</label><input name="category" list="cl" value="${esc(p.category)}"><datalist id="cl">${cats().slice(1).map(c=>`<option value="${esc(c)}">`).join('')}</datalist><div class="em">Required</div></div></div>
   <div class="two">${fld('price','Price ('+CFG.currency+')',p.price,{type:'number',err:'Enter a non-negative number'})}${fld('stock','Stock',p.stock,{type:'number',err:'Enter a whole number ≥ 0'})}</div>
+  <div class="field"><label>Images <span id="imgcount" class="mono"></span></label>
+  <div class="imgs" id="imgs"></div>
+  <input type="file" id="imgfile" accept="image/*" multiple>
+  <div class="mono" style="margin-top:6px;text-transform:none;letter-spacing:0">The first image is the main one shown in the catalogue and banner; the product page lets customers browse all of them. Images are resized in the browser before saving. Landscape photos (3:2) fill the catalogue cards best.</div></div>
   <div class="field"><label>Description</label><textarea name="description" rows="3">${esc(p.description)}</textarea></div>
   <div class="field"><label>Specifications (one per line, “Label: value”)</label><textarea name="specs" rows="4">${esc((p.specs||[]).map(s=>s[0]+': '+s[1]).join('\n'))}</textarea></div>
   <div class="two"><div class="field"><label>Placeholder art hue (0–360)</label><input name="hue" type="number" min="0" max="360" value="${hue}"></div><label class="chk" style="align-self:end;margin-bottom:18px"><input type="checkbox" name="featured" ${p.featured?'checked':''}> Show in hero banner (several allowed)</label></div>
   <div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" data-act="closeall">Cancel</button><button class="btn" type="submit">Save</button></div>
   <input type="hidden" name="id" value="${esc(id||'')}"></form></div>`;
   $('#modal').classList.add('open');
+  pfRender();
 }
+
+/* ---- product form: image list (new files are resized immediately and uploaded on Save) ---- */
+let PF={items:[],orig:[]};
+function pfRender(){
+  const box=$('#imgs');if(!box)return;
+  const n=PF.items.length;
+  box.innerHTML=PF.items.map((it,i)=>`<div class="imgi ${i===0?'main':''}"><img src="${esc(it.url)}" alt="">${i===0?'<span class="tag">MAIN</span>':''}<div class="ctl"><button type="button" data-act="imgl" data-i="${i}" ${i===0?'disabled':''} aria-label="Move earlier">◀</button><button type="button" data-act="imgx" data-i="${i}" aria-label="Remove image">✕</button><button type="button" data-act="imgr" data-i="${i}" ${i===n-1?'disabled':''} aria-label="Move later">▶</button></div></div>`).join('')||'<span class="mono">No images yet: the generated placeholder is shown until you add one.</span>';
+  const c=$('#imgcount');if(c)c.textContent=n+' / '+CFG.images.maxPerProduct;
+}
+async function pfAdd(files){
+  const max=CFG.images.maxPerProduct,room=max-PF.items.length,list=[...files];
+  if(list.length>room)toast('Only '+max+' images per product: extra files were skipped');
+  for(const f of list.slice(0,Math.max(0,room))){
+    try{const blob=await compressImage(f);PF.items.push({blob,url:URL.createObjectURL(blob)});pfRender()}
+    catch(err){toast(err.message)}
+  }
+}
+function pfMove(i,d){const j=i+d;if(j<0||j>=PF.items.length)return;[PF.items[i],PF.items[j]]=[PF.items[j],PF.items[i]];pfRender()}
+function pfRemove(i){const it=PF.items[i];if(it&&it.blob)URL.revokeObjectURL(it.url);PF.items.splice(i,1);pfRender()}

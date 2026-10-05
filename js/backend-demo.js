@@ -8,7 +8,8 @@ const demoBackend=(()=>{
   const DEMO_ADMIN={email:'admin@demo.mv',password:'demo1234'};
   const mem={};
   const get=(k,d)=>{try{const v=localStorage.getItem(k);if(v!==null)return JSON.parse(v)}catch(e){}return k in mem?mem[k]:d};
-  const set=(k,v)=>{mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const isQuota=e=>!!e&&(e.name==='QuotaExceededError'||e.code===22||e.code===1014||/quota/i.test(e.message||''));
+  const set=(k,v)=>{mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){if(isQuota(e))throw new Error('Browser storage is full: the demo keeps product images inside the browser. Remove some images, or use "Reset demo data".')}};
   const clone=x=>JSON.parse(JSON.stringify(x));
   const P=(sku,name,category,price,stock,description,specs,featured,hue)=>({id:'d-'+sku.toLowerCase(),sku,name,category,price,stock,description,specs,featured,hue});
   const SEED=[
@@ -41,10 +42,15 @@ const demoBackend=(()=>{
       if(!(p.price>=0)||!Number.isInteger(p.stock)||p.stock<0)throw new Error('Invalid price or stock');
       const all=products(),sku=(p.sku||'').trim();
       if(sku&&all.some(x=>x.sku===sku&&x.id!==p.id))throw new Error('That value must be unique (is the SKU already used?)');
-      const row={sku,name:p.name,category:p.category,price:p.price,stock:p.stock,description:p.description||'',specs:p.specs||[],featured:!!p.featured,hue:p.hue};
+      const row={sku,name:p.name,category:p.category,price:p.price,stock:p.stock,description:p.description||'',specs:p.specs||[],featured:!!p.featured,hue:p.hue,images:Array.isArray(p.images)?p.images.filter(Boolean):[]};
       if(p.id){const i=all.findIndex(x=>x.id===p.id);if(i<0)throw new Error('Not permitted, or the record no longer exists');all[i]={...all[i],...row};set(KEY.p,all);return p.id}
       const id='d-'+Date.now().toString(36);all.push({id,...row});set(KEY.p,all);return id;
     },
+    async uploadImage(blob){ // demo: the image is kept inside the product record as a data address
+      needAdmin();
+      return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read the image'));r.readAsDataURL(blob)});
+    },
+    async deleteImages(){},
     async deleteProduct(id){needAdmin();const all=products();if(!all.some(x=>x.id===id))throw new Error('Not permitted, or the record no longer exists');set(KEY.p,all.filter(x=>x.id!==id))},
     async placeOrder(items,c,area,payment){
       const t=k=>String(c[k]==null?'':c[k]).trim();

@@ -21,12 +21,14 @@ js/config.js            Mode, Supabase URL and anon key, currency, defaults.
                         This is the only file you must edit.
 js/utils.js             Helpers (formatting, storage, toast messages).
 js/art.js               Generated placeholder product art.
+js/images.js            Product photographs: first-image helper and in-browser resizing.
 js/backend-supabase.js  Live backend: products, orders, settings, sign-in.
 js/backend-demo.js      Demo backend: the same functions, simulated in the
                         browser (localStorage).
 js/backend.js           Chooses the backend according to the mode.
 js/state.js             Application state, cart and totals.
 js/hero.js              Hero banner slider: autoplay, arrows, dots, swipe.
+js/gallery.js           Product page image gallery: arrows, thumbnails, swipe.
 js/views-store.js       Home, catalogue, product page, cart, checkout and
                         order confirmation.
 js/views-account.js     Sign in, registration and order history.
@@ -38,6 +40,33 @@ sql/schema.sql          Database schema, security rules and sample data
 
 The scripts share one global scope and must stay in the order listed in
 index.html.
+
+
+PRODUCT IMAGES
+--------------
+
+In Admin > Products, the Add product / Edit form has an Images field. Choose
+one or more photos (up to 6 per product, set by images.maxPerProduct in
+js/config.js). Each photo is resized in the browser before it is saved. Use the
+arrow buttons under a thumbnail to change the order and the cross to remove
+it. The first image is the main one:
+- the catalogue, the hero banner and the cart show the first image only;
+- the product page shows all images, which visitors can cycle through with the
+  arrows, the thumbnails, a swipe on a phone, or the keyboard arrow keys.
+A product with no images keeps its generated placeholder.
+
+Tip: landscape photos in a 3:2 shape fill the catalogue cards best. Photos of
+other shapes are cropped to fit on the cards, but are shown whole on the
+product page.
+
+Where the images are kept:
+- Live mode: in a Supabase Storage bucket named product-images, created by
+  sql/schema.sql. Anyone can view the images; only administrators can add or
+  remove them. Removing an image, or deleting a product, also deletes the
+  stored files. The free Supabase plan includes 1 GB of file storage.
+- Demo mode: inside the visitor's browser, which only has a few megabytes of
+  room, so demo images are resized smaller. If the browser is full, the
+  admin portal says so; remove some images or use "Reset demo data".
 
 
 DEMO MODE (SHOWING THE SITE TO A CLIENT)
@@ -64,6 +93,9 @@ Demo accounts:
   Administrator   admin@demo.mv   password: demo1234
   Customer        use Create account: name, phone number, any email address
                   and a password of 6 or more characters
+
+If you already ran sql/schema.sql in Supabase before this version, run it again
+(it is safe to repeat): it adds the images column and the storage bucket.
 
 Things the client should know:
 - Data is stored in the visitor's own browser only. Changes made in the admin
@@ -159,5 +191,5 @@ SECURITY NOTES
 NOT YET INCLUDED
 ----------------
 
-Order notifications to the store, card payments, product image uploads, and
-search-engine-friendly product pages.
+Order notifications to the store, card payments, and search-engine-friendly
+product pages.

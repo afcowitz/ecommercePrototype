@@ -32,6 +32,7 @@ async function render0(keepScroll){
   $('#app').innerHTML=html;
   const sel=$('select[data-in=sort]');if(sel)sel.value=S.filter.sort;
   initHero();
+  initGallery();
   updateChrome();
   if(!keepScroll)window.scrollTo(0,0);else window.scrollTo(0,y);
 }
@@ -54,6 +55,9 @@ document.addEventListener('click',async e=>{
   else if(a==='resetdemo'){if(window.confirm('Reset all demo data (products, orders, accounts and cart) to the starting state?'))demoBackend.reset()}
   else if(a==='admtab'){S.adminTab=el.dataset.v;render(true)}
   else if(a==='pform'){productForm(id)}
+  else if(a==='imgl')pfMove(+el.dataset.i,-1);
+  else if(a==='imgr')pfMove(+el.dataset.i,1);
+  else if(a==='imgx')pfRemove(+el.dataset.i);
   else if(a==='del'){
     if(S.confirmDel===id){try{await db.deleteProduct(id);S.cart=S.cart.filter(c=>c.id!==id);saveCart();S.products=await db.listProducts();toast('Product deleted')}catch(err){toast(err.message)}S.confirmDel=null}
     else S.confirmDel=id;
@@ -71,6 +75,7 @@ document.addEventListener('change',async e=>{
   else if(k==='stock'){S.filter.inStock=t.checked;refreshGrid()}
   else if(t.name==='area'){S.area=t.value;$('#islandf').style.display=t.value==='island'?'grid':'none';$('#cosum').innerHTML=sumHtml(true)}
   else if(t.name==='mk'){$('#pw').style.display=t.checked?'block':'none'}
+  else if(t.id==='imgfile'){const fl=[...t.files];t.value='';await pfAdd(fl)}
   else if(t.dataset.quick&&isAdmin()){
     const p={...getP(t.dataset.id)},v=Number(t.value),key=t.dataset.quick;
     if(!Number.isFinite(v)||v<0||(key==='stock'&&!Number.isInteger(v))){toast('Invalid value');return render(true)}
@@ -135,7 +140,17 @@ async function handleSubmit(f){
     if(!validate(f,{name:req,category:req,price:v=>v!==''&&Number.isFinite(+v)&&+v>=0,stock:v=>v!==''&&Number.isInteger(+v)&&+v>=0}))return;
     const specs=fd.specs.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.indexOf(':');return i<0?[l,'']:[l.slice(0,i).trim(),l.slice(i+1).trim()]});
     const hue=Math.min(360,Math.max(0,Math.round(Number(fd.hue))));
-    const id=await db.saveProduct({id:fd.id||null,sku:(fd.sku||'').trim(),name:fd.name.trim(),category:fd.category.trim(),price:Number(fd.price),stock:Number(fd.stock),description:fd.description.trim(),specs,featured:!!fd.featured,hue:Number.isFinite(hue)?hue:200});
+    const uploaded=[],urls=[];
+    if(PF.items.some(it=>it.blob))toast('Saving images…');
+    try{
+      for(const it of PF.items){if(it.blob){const u=await db.uploadImage(it.blob);uploaded.push(u);urls.push(u)}else urls.push(it.url)}
+      await db.saveProduct({id:fd.id||null,sku:(fd.sku||'').trim(),name:fd.name.trim(),category:fd.category.trim(),price:Number(fd.price),stock:Number(fd.stock),description:fd.description.trim(),specs,featured:!!fd.featured,hue:Number.isFinite(hue)?hue:200,images:urls});
+    }catch(err){
+      if(uploaded.length)try{await db.deleteImages(uploaded)}catch(e){}   // do not leave orphaned files behind
+      throw err;
+    }
+    const removed=PF.orig.filter(u=>!urls.includes(u));
+    if(removed.length)try{await db.deleteImages(removed)}catch(e){}
     S.products=await db.listProducts();
     closeAll();toast('Product saved');render(true);
   }

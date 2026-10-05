@@ -63,11 +63,15 @@ create table if not exists public.products (
   stock       integer not null default 0 check (stock >= 0),
   description text not null default '',
   specs       jsonb not null default '[]'::jsonb,   -- [["Label","Value"], ...]
+  images      jsonb not null default '[]'::jsonb,   -- ordered list of image addresses; the first is the main image
   featured    boolean not null default false,        -- hero banner product
   hue         integer not null default 200 check (hue between 0 and 360),  -- placeholder art colour
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- for projects created before product images were added:
+alter table public.products add column if not exists images jsonb not null default '[]'::jsonb;
 
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
@@ -265,6 +269,25 @@ grant update (status) on public.orders to authenticated;                        
 revoke all on public.products from anon, authenticated;
 grant select on public.products to anon, authenticated;
 grant insert, update, delete on public.products to authenticated;                                       -- admins only, via policy
+
+-- ---------- product image storage ----------
+-- A public bucket: anyone can view the images (they appear in the catalogue); only administrators can upload or remove them.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('product-images', 'product-images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;
+
+drop policy if exists product_images_select on storage.objects;
+drop policy if exists product_images_insert on storage.objects;
+drop policy if exists product_images_update on storage.objects;
+drop policy if exists product_images_delete on storage.objects;
+create policy product_images_select on storage.objects for select to authenticated
+  using (bucket_id = 'product-images' and public.is_admin());
+create policy product_images_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'product-images' and public.is_admin());
+create policy product_images_update on storage.objects for update to authenticated
+  using (bucket_id = 'product-images' and public.is_admin()) with check (bucket_id = 'product-images' and public.is_admin());
+create policy product_images_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'product-images' and public.is_admin());
 
 -- ---------- sample products (safe to delete) ----------
 insert into public.products (sku, name, category, price, stock, description, specs, featured, hue) values

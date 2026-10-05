@@ -2,7 +2,7 @@
 /* NODEX — storefront views: home, catalogue, product, cart, checkout, order confirmation. */
 /* ============ VIEWS ============ */
 const stBadge=p=>p.stock<=0?'<span class="st bad">Out of stock</span>':p.stock<=CFG.lowStock?`<span class="st warn">Only ${p.stock} left</span>`:'<span class="st ok">In stock</span>';
-function card(p){return `<article class="card"><a class="thumb" href="#/product/${p.id}">${art(p)}</a><div class="cbody">
+function card(p){return `<article class="card"><a class="thumb" href="#/product/${p.id}">${pic(p)}</a><div class="cbody">
   <div class="mono">${esc(p.category)}</div><a class="cname" href="#/product/${p.id}">${esc(p.name)}</a>
   <div class="row"><span class="price">${fmt(p.price)}</span>${stBadge(p)}</div>
   <button class="btn" data-act="add" data-id="${p.id}" ${p.stock<=0?'disabled':''}>${p.stock<=0?'Unavailable':'Add to cart'}</button></div></article>`}
@@ -29,7 +29,7 @@ function heroSlide(h,i,n){
   return `<article class="slide ${i===0?'active':''}" role="group" aria-roledescription="slide" aria-label="${i+1} of ${n}"><div class="copy"><span class="mono">// Featured product</span><h1>${esc(h.name).replace(/^(\S+)/,'<em>$1</em>')}</h1>
    <p>${esc(h.description)}</p><div class="chips">${(h.specs||[]).slice(0,3).map(s=>`<span class="chip">${esc(s[1])}</span>`).join('')}</div>
    <div class="row"><span class="price">${fmt(h.price)}</span><button class="btn" data-act="add" data-id="${h.id}">Add to cart</button><a class="btn ghost" href="#/product/${h.id}">View details</a></div></div>
-   <div class="art" style="--h:${hue}"><div class="glow"></div><div class="art-in"><div class="float">${art(h)}</div></div></div></article>`;
+   <div class="art" style="--h:${hue}"><div class="glow"></div><div class="art-in"><div class="float">${pic(h,{eager:true})}</div></div></div></article>`;
 }
 function viewHome(){
   let hs=S.products.filter(p=>p.featured&&p.stock>0).slice(0,CFG.heroMax||5);
@@ -45,12 +45,22 @@ function viewHome(){
 }
 function viewShop(){return catalogue()}
 
+/* Product page image pane: all images, cycled with arrows, thumbnails, swipe or keyboard (see gallery.js). */
+function gallery(p){
+  const imgs=Array.isArray(p.images)?p.images.filter(Boolean):[];
+  if(!imgs.length)return `<div class="pleft"><div class="pimg">${art(p)}</div></div>`;
+  const n=imgs.length;
+  const slides=imgs.map((u,i)=>`<div class="gs ${i===0?'active':''}"><img src="${esc(u)}" alt="${esc(p.name)} (${i+1} of ${n})" ${i===0?'fetchpriority="high"':'loading="lazy"'} decoding="async" draggable="false"></div>`).join('');
+  const ui=n>1?`<button class="gbtn prev" data-g="prev" aria-label="Previous image">‹</button><button class="gbtn next" data-g="next" aria-label="Next image">›</button><div class="gcount mono"><b id="gc">1</b> / ${n}</div>`:'';
+  const thumbs=n>1?`<div class="gthumbs">${imgs.map((u,i)=>`<button class="gt ${i===0?'on':''}" data-g="${i}" aria-label="Show image ${i+1}"><img src="${esc(u)}" alt="" loading="lazy" decoding="async" draggable="false"></button>`).join('')}</div>`:'';
+  return `<div class="pleft"><div class="pimg gallery" id="gallery" role="region" aria-roledescription="carousel" aria-label="Product images"><div class="gslides">${slides}</div>${ui}</div>${thumbs}</div>`;
+}
 function viewProduct(id){
   const p=getP(id);if(!p)return '<div class="empty" style="margin-top:30px">Product not found. <a href="#/shop" style="color:var(--accent)">Back to catalogue</a></div>';
   const q=Math.min(S.pdQty,Math.max(1,p.stock));S.pdQty=q;
   const rel=S.products.filter(x=>x.category===p.category&&x.id!==p.id).slice(0,4);
   return `<div class="crumb"><a href="#/">Home</a> / <a href="#/shop">Catalogue</a> / ${esc(p.category)}</div>
-  <div class="pgrid"><div class="pimg">${art(p)}</div><div class="pinfo">
+  <div class="pgrid">${gallery(p)}<div class="pinfo">
   <span class="mono">${esc(p.category)} · SKU ${esc(p.sku||String(p.id).slice(0,8)).toUpperCase()}</span><h1>${esc(p.name)}</h1>
   <div class="row" style="margin-bottom:14px"><span class="price">${fmt(p.price)}</span>${stBadge(p)}</div>
   <p style="color:var(--muted)">${esc(p.description)}</p>
@@ -61,7 +71,7 @@ function viewProduct(id){
   ${rel.length?`<h2 class="sec">Related <span class="mono">${esc(p.category)}</span></h2><div class="grid">${rel.map(card).join('')}</div>`:''}`;
 }
 
-function lineHtml(l){return `<div class="line"><a class="lt" href="#/product/${l.p.id}">${art(l.p)}</a>
+function lineHtml(l){return `<div class="line"><a class="lt" href="#/product/${l.p.id}">${pic(l.p)}</a>
   <div><a href="#/product/${l.p.id}" style="font-weight:500">${esc(l.p.name)}</a><div class="mono">${fmt(l.p.price)}</div>
   <div class="row" style="margin-top:8px"><div class="qty"><button data-act="qty" data-id="${l.p.id}" data-d="-1">−</button><span>${l.qty}</span><button data-act="qty" data-id="${l.p.id}" data-d="1">+</button></div>
   <button class="link" data-act="rm" data-id="${l.p.id}">Remove</button></div></div><div class="price">${fmt(l.p.price*l.qty)}</div></div>`}
